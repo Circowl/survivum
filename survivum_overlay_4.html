@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Survivum Overlay</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: transparent;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-height: 100vh;
+    padding: 20px;
+    font-family: 'Rajdhani', sans-serif;
+  }
+
+  .widget {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, rgba(0,0,0,0.85) 0%, rgba(10,20,10,0.90) 100%);
+    border: 1px solid rgba(80,220,100,0.35);
+    border-radius: 12px;
+    padding: 14px 22px 14px 16px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+    overflow: visible;
+    animation: fadeIn 0.6s ease;
+    min-width: 200px;
+  }
+
+  .widget::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(80,220,100,0.6), transparent);
+  }
+
+  .icon-wrap {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+
+  .icon-wrap svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 6px rgba(80,220,100,0.5));
+  }
+
+  .pulse-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(80,220,100,0.5);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.18); opacity: 0.15; }
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: rgba(80,220,100,0.7);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .count-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 6px;
+  }
+
+  .count {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    color: #ffffff;
+    line-height: 1;
+    text-shadow: 0 0 20px rgba(80,220,100,0.8), 0 0 40px rgba(80,220,100,0.3);
+    transition: all 0.4s ease;
+    min-width: 30px;
+  }
+
+  .max {
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4cdc64;
+    box-shadow: 0 0 6px #4cdc64;
+    animation: blink 2.5s ease-in-out infinite;
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-bottom: 2px;
+  }
+
+  .status-dot.offline { background: #e05555; box-shadow: 0 0 6px #e05555; animation: none; }
+  .status-dot.loading { background: #f0a030; box-shadow: 0 0 6px #f0a030; animation: blink 0.8s ease-in-out infinite; }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .debug {
+    display: none;
+    font-family: monospace;
+    font-size: 9px;
+    color: #f0a030;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid #f0a03060;
+    border-radius: 6px;
+    padding: 6px 10px;
+    max-width: 340px;
+    word-break: break-all;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 10;
+    white-space: pre-wrap;
+  }
+
+  .debug.visible { display: block; }
+</style>
+</head>
+<body>
+<div class="widget" id="widget">
+  <div class="icon-wrap">
+    <div class="pulse-ring" id="pulseRing"></div>
+    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="0" width="14" height="14" fill="#4cdc64"/>
+      <rect x="3" y="3" width="3" height="3" fill="#1a1a1a"/>
+      <rect x="10" y="3" width="3" height="3" fill="#1a1a1a"/>
+      <rect x="6" y="7" width="4" height="2" fill="#1a1a1a"/>
+      <rect x="4" y="9" width="2" height="2" fill="#1a1a1a"/>
+      <rect x="10" y="9" width="2" height="2" fill="#1a1a1a"/>
+      <rect x="6" y="11" width="4" height="2" fill="#1a1a1a"/>
+    </svg>
+  </div>
+
+  <div class="info">
+    <span class="label">En ligne</span>
+    <div class="count-row">
+      <span class="count" id="playerCount">...</span>
+      <span class="max" id="playerMax"></span>
+      <span class="status-dot loading" id="statusDot"></span>
+    </div>
+  </div>
+
+  <div class="debug" id="debugBox"></div>
+</div>
+
+<script>
+  const SERVER = 'play.survivum.fr';
+  const REFRESH_MS = 30000;
+
+  const APIS = [
+    {
+      url: `https://api.mcsrvstat.us/3/${SERVER}`,
+      parse: (d) => ({
+        online: d.online === true,
+        players: d.players?.online ?? 0,
+        max: d.players?.max ?? '?'
+      })
+    },
+    {
+      url: `https://api.mcstatus.io/v2/status/java/${SERVER}`,
+      parse: (d) => ({
+        online: d.online === true,
+        players: d.players?.online ?? 0,
+        max: d.players?.max ?? '?'
+      })
+    }
+  ];
+
+  function setDebug(msg) {
+    const box = document.getElementById('debugBox');
+    if (msg) {
+      box.textContent = msg;
+      box.classList.add('visible');
+    } else {
+      box.classList.remove('visible');
+    }
+  }
+
+  async function tryApi(api) {
+    const res = await fetch(api.url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return api.parse(data);
+  }
+
+  async function fetchPlayers() {
+    const countEl = document.getElementById('playerCount');
+    const maxEl = document.getElementById('playerMax');
+    const dotEl = document.getElementById('statusDot');
+    const ringEl = document.getElementById('pulseRing');
+
+    dotEl.className = 'status-dot loading';
+
+    const errors = [];
+
+    for (const api of APIS) {
+      try {
+        const result = await tryApi(api);
+        if (result.online) {
+          countEl.textContent = result.players;
+          maxEl.textContent = `/ ${result.max}`;
+          dotEl.className = 'status-dot';
+          ringEl.style.display = 'block';
+          setDebug(null);
+          return;
+        } else {
+          errors.push(`${api.url.split('/')[2]}: serveur offline`);
+        }
+      } catch (e) {
+        errors.push(`${api.url.split('/')[2]}: ${e.message}`);
+      }
+    }
+
+    // Toutes les APIs ont échoué
+    countEl.textContent = 'ERR';
+    maxEl.textContent = '';
+    dotEl.className = 'status-dot offline';
+    ringEl.style.display = 'none';
+    setDebug('Erreurs:\n' + errors.join('\n'));
+  }
+
+  fetchPlayers();
+  setInterval(fetchPlayers, REFRESH_MS);
+</script>
+</body>
+</html>
